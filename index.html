@@ -387,7 +387,9 @@
     font-size:10px; color:#fff; font-weight:700; flex-shrink:0;}
   .trow .who .nm{font-weight:600; color:var(--ink-strong); font-size:12.5px;}
   .trow .tel{color:var(--grape-deep); font-size:11px;}
-  .trow .pref{color:var(--ink); font-size:11px;}
+  .trow .pref{color:var(--ink); font-size:11px; display:flex; flex-direction:column; gap:2px;}
+  .trow .pref .pdate{color:var(--ink-strong); font-weight:600; font-size:11.5px;}
+  .trow .pref .ptime{color:var(--muted); font-size:10.5px; line-height:1.4;}
   .trow .agree{text-align:center; color:var(--mint); font-weight:700;}
   .trow .agree.no{color:var(--faint);}
   .tag{font-size:10.5px; padding:4px 10px; border-radius:50px; font-weight:600; text-align:center; justify-self:end;}
@@ -676,16 +678,28 @@ function maskTel(t){
   }
   return t||'-';
 }
+/* 날짜를 짧게: "2026년 6월 23일" -> "6/23", "6/23"은 그대로. 쉼표로 여러 개도 각각 변환 */
+function shortDate(s){
+  if(!s || s==='-') return s;
+  return s.split(',').map(part=>{
+    const p=part.trim();
+    const m=p.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+    if(m) return m[2]+'/'+m[3];
+    return p; // 이미 짧은 형식이면 그대로
+  }).join(', ');
+}
 
 function computeStats(){
   const total=applicants.length;
   const win=applicants.filter(a=>a.st==='win').length;
   const noSched=applicants.filter(a=>!a.pref || a.pref==='-').length;
-  // 선호 날짜 집계
+  // 선호 날짜 집계 (짧은 형식으로)
   const dayMap={};
-  applicants.forEach(a=>{ (a.pref||'').split(',').map(s=>s.trim()).filter(s=>s&&s!=='-').forEach(d=>{dayMap[d]=(dayMap[d]||0)+1;}); });
+  applicants.forEach(a=>{ (a.pref||'').split(',').map(s=>shortDate(s.trim())).filter(s=>s&&s!=='-').forEach(d=>{dayMap[d]=(dayMap[d]||0)+1;}); });
   const dayPref=Object.keys(dayMap).sort((x,y)=>{
-    const nx=parseInt((x.split('/')[1]||0),10), ny=parseInt((y.split('/')[1]||0),10); return nx-ny;
+    const nx=parseInt((x.split('/')[1]||0),10), ny=parseInt((y.split('/')[1]||0),10);
+    const mx=parseInt((x.split('/')[0]||0),10), my=parseInt((y.split('/')[0]||0),10);
+    return mx!==my ? mx-my : nx-ny;
   }).map(d=>({d, v:dayMap[d]}));
   // 선호 시간대 집계
   const timeMap={};
@@ -731,10 +745,11 @@ function drawTable(){
     rows+=`<div class="empty-row">아직 신청자가 없어요.<br>사용자 사이트에서 ‘신청 완료하기’를 하면 여기에 표시돼요.</div>`;
   }else{
     list.forEach(a=>{
+      const timeLine = (a.times && a.times!=='-') ? `<span class="ptime">${a.times}</span>` : '';
       rows+=`<div class="trow">
         <span class="who"><span class="av" style="background:${a.c}">${a.ini.slice(0,1)}</span><span class="nm">${a.nm}</span></span>
         <span class="tel">${a.tel}</span>
-        <span class="pref">${a.pref}</span>
+        <span class="pref"><span class="pdate">${shortDate(a.pref)}</span>${timeLine}</span>
         <span class="agree${a.ag?'':' no'}">${a.ag?'✓':'—'}</span>
         <span class="tag ${a.st}">${a.st==='win'?'당첨':'대기'}</span>
       </div>`;
