@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마음결 · 운영자 콘솔</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+  @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap');
+
+  :root{
+    /* lavender-pink dream palette (from reference) */
+    --bg:#EFE3F2;            /* page behind device */
+    --wash1:#F6E7F2;         /* top wash */
+    --wash2:#E9DCF5;         /* bottom wash */
+    --paper:#FFFFFF;
+    --card:#FBF4FB;
+    --ink:#5B4A6B;           /* soft plum text */
+    --ink-strong:#4A3A5C;
+    --muted:#9A8BAA;
+    --faint:#BCB0C8;
+    --line:#EBDEEE;
+    --line2:#F0E6F3;
+    /* accents */
+    --grape:#B27CD6;         /* primary purple */
+    --grape-deep:#9B5FC4;
+    --pink:#E59CC4;          /* primary pink */
+    --pink-deep:#D87BAE;
+    --lilac:#C9A8E8;
+    --mint:#A8D8C8;
+    --peach:#F3C6B8;
+    --butter:#F5E0A8;
+    --grad:linear-gradient(135deg,#E59CC4 0%,#B27CD6 100%);
+    --grad-soft:linear-gradient(135deg,#F3D4E6 0%,#DCC6F0 100%);
+    --grad-btn:linear-gradient(100deg,#EBA6CC 0%,#C089DD 55%,#A87EDB 100%);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  /* 한국어 단어 단위 줄바꿈: '학교입니/다' 같은 글자 단위 분리 방지 */
+  *{word-break:keep-all; overflow-wrap:break-word;}
+  html,body{height:100%;}
+  body{
+    font-family:'Pretendard','Pretendard Variable',-apple-system,sans-serif;
+    background:radial-gradient(120% 80% at 20% 0%, #F3E4F1 0%, #E7DAF3 55%, #E0D4F0 100%);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh; padding:22px 12px 40px; line-height:1.6;
+    word-break:keep-all; overflow-wrap:break-word;
+  }
+  .serif{font-family:'Gowun Batang',serif;}
+
+  /* ===== device ===== */
+  .device{
+    width:100%; max-width:412px;
+    background:linear-gradient(180deg,#FBF1F8 0%,#F3E8F8 100%);
+    border-radius:34px; overflow:hidden;
+    border:1px solid #E6D6EC;
+    box-shadow:0 34px 80px -26px rgba(120,80,150,.45), 0 2px 0 rgba(255,255,255,.7) inset;
+    position:relative; display:flex; flex-direction:column;
+    height:min(840px, calc(100vh - 110px)); min-height:560px;
+  }
+  .screen{display:none; flex-direction:column; flex:1; min-height:0;
+    animation:rise .5s cubic-bezier(.2,.7,.3,1);}
+  .screen.active{display:flex; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  .screen[data-screen="chat"].active{overflow:hidden;}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
+
+  @media (max-width:480px){
+    body{padding:14px 8px 30px;}
+    .device{height:auto; min-height:calc(100vh - 44px); overflow:visible;}
+    .screen.active{overflow:visible;}
+    .screen[data-screen="chat"].active{min-height:calc(100vh - 44px); overflow:hidden;}
+  }
+
+  button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+  input,textarea{font-family:inherit;}
+
+  /* sparkles bg layer */
+  .sky{position:absolute; inset:0; pointer-events:none; overflow:hidden;}
+  .sky .sp{position:absolute; color:#E9C6E6; opacity:.7; font-size:12px; animation:tw 4s ease-in-out infinite;}
+  @keyframes tw{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:.9;transform:scale(1.1)}}
+
+  /* pill button */
+  .cta{
+    width:100%; padding:17px; border-radius:50px;
+    background:var(--grad-btn); color:#fff; font-size:16px; font-weight:700; letter-spacing:.3px;
+    box-shadow:0 14px 30px -10px rgba(176,110,210,.7); transition:transform .15s, box-shadow .2s;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+  }
+  .cta:hover{transform:translateY(-2px); box-shadow:0 20px 36px -12px rgba(176,110,210,.8);}
+  .cta:active{transform:scale(.99);}
+  .cta.ghost{background:rgba(255,255,255,.7); color:var(--grape-deep); box-shadow:none; border:1.5px solid #EAD9EF;}
+  .cta.ghost:hover{background:#fff;}
+  .cta:disabled{opacity:.5; box-shadow:none; cursor:not-allowed; transform:none;}
+
+  .glow{border-radius:50%;
+    background:radial-gradient(circle at 38% 33%, #fff 0%, #F4D3EC 28%, #D9A8E6 62%, #B98BD8 100%);
+    box-shadow:0 16px 40px -10px rgba(180,120,210,.6), 0 0 0 12px rgba(225,195,235,.25), 0 0 0 26px rgba(225,195,235,.12);}
+
+  .badge{
+    display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; letter-spacing:.2px;
+    color:var(--grape-deep); background:rgba(255,255,255,.8); border:1px solid #EBD6EF;
+    padding:8px 16px; border-radius:50px;
+  }
+
+  /* ============ LANDING ============ */
+  .landing{flex:1; display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:42px 28px 30px; position:relative;}
+  .landing .badge{margin-bottom:30px;}
+  .landing .glow{width:104px; height:104px; margin-bottom:30px; animation:float 5s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  .ttl{font-family:'Gowun Batang',serif; font-size:34px; font-weight:700; line-height:1.34; letter-spacing:-.5px;
+    background:linear-gradient(120deg,#C77BC4 0%,#9B6FD6 60%,#8A7BE0 100%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+  .sub{font-size:14.5px; color:var(--ink); opacity:.82; margin-top:18px; line-height:1.85;}
+  .countpill{display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--muted);
+    background:rgba(255,255,255,.78); border:1px solid #EEDFEF; padding:10px 18px; border-radius:50px; margin-top:26px;}
+  .countpill b{color:var(--grape-deep); font-weight:700;}
+  .landing .cta{margin-top:18px;}
+  .lfoot{font-size:11.5px; color:var(--faint); margin-top:18px; line-height:1.7;}
+
+  /* ============ CHAT ============ */
+  .chead{display:flex; align-items:center; gap:11px; padding:16px 18px; border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.55); backdrop-filter:blur(6px);}
+  .chead .ava{width:34px; height:34px; border-radius:50%;
+    background:radial-gradient(circle at 38% 33%,#fff,#EEC6E8 45%,#C49BE0); box-shadow:0 4px 12px -4px rgba(180,120,210,.6);}
+  .chead .nm{font-family:'Gowun Batang',serif; font-size:15px; font-weight:700; color:var(--ink-strong);}
+  .chead .st{font-size:11px; color:var(--faint); display:flex; align-items:center; gap:5px; margin-top:1px;}
+  .pulse{width:6px; height:6px; border-radius:50%; background:var(--mint); box-shadow:0 0 0 0 rgba(168,216,200,.7); animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(168,216,200,.5)}70%{box-shadow:0 0 0 7px rgba(168,216,200,0)}100%{box-shadow:0 0 0 0 rgba(168,216,200,0)}}
+  .back{margin-left:auto; font-size:12.5px; color:var(--muted); padding:5px;}
+
+  .prail{height:3px; background:var(--line);}
+  .prail>i{display:block; height:100%; width:0; background:var(--grad); transition:width .5s ease;}
+
+  .chat{flex:1; padding:18px 16px; display:flex; flex-direction:column; gap:13px; overflow-y:auto;}
+  .row{display:flex; gap:9px; align-items:flex-end; max-width:88%;}
+  .row.me{align-self:flex-end; flex-direction:row-reverse;}
+  .ai-ava{width:28px; height:28px; border-radius:50%; flex-shrink:0;
+    background:radial-gradient(circle at 38% 33%,#fff,#EEC6E8 45%,#C49BE0);}
+  .bub-a{background:var(--paper); border:1px solid var(--line); color:var(--ink); padding:12px 15px;
+    border-radius:18px 18px 18px 5px; font-size:14px; line-height:1.65; box-shadow:0 2px 8px -4px rgba(150,110,180,.18);}
+  .bub-m{background:var(--grad-btn); color:#fff; padding:12px 15px; border-radius:18px 18px 5px 18px;
+    font-size:14px; line-height:1.65; box-shadow:0 8px 18px -8px rgba(176,110,210,.6);}
+  .typing{display:flex; gap:4px; padding:14px 16px;}
+  .typing span{width:6px; height:6px; border-radius:50%; background:var(--lilac); animation:blink 1.3s infinite;}
+  .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+
+  .replies{padding:0 16px 16px;}
+  .rhint{font-size:11px; color:var(--faint); margin:2px 0 9px 3px;}
+  .opt{display:block; width:100%; text-align:left; background:var(--paper); border:1.5px solid var(--line);
+    color:var(--ink); padding:13px 15px; border-radius:16px; font-size:14px; margin-bottom:9px; transition:all .16s;}
+  .opt:hover{border-color:var(--grape); transform:translateY(-2px); box-shadow:0 10px 20px -10px rgba(176,110,210,.5);}
+  .opt .lead{font-weight:600; color:var(--ink-strong);}
+  .opt .sub2{display:block; font-size:11.5px; color:var(--faint); margin-top:3px;}
+  .typebar{display:flex; align-items:center; gap:8px; margin-top:4px; background:var(--paper);
+    border:1.5px solid var(--line); border-radius:24px; padding:5px 5px 5px 16px;}
+  .typebar input{flex:1; border:none; outline:none; font-size:13.5px; color:var(--ink); background:transparent;}
+  .typebar input::placeholder{color:var(--faint);}
+  .send{width:38px; height:38px; border-radius:50%; background:var(--grad-btn); color:#fff;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .send svg{width:17px; height:17px;}
+
+  /* ============ LOADING ============ */
+  .loading{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; padding:30px; text-align:center;}
+  .load-orb{position:relative; width:130px; height:130px; display:flex; align-items:center; justify-content:center;}
+  .load-orb svg{position:absolute; transform:rotate(-90deg);}
+  .load-orb .glow{width:62px; height:62px;}
+  .load-t{font-family:'Gowun Batang',serif; font-size:17px; color:var(--ink-strong);}
+  .load-s{font-size:13px; color:var(--muted); max-width:240px; line-height:1.7;}
+  .load-steps{display:flex; flex-direction:column; gap:9px; width:100%; max-width:250px; margin-top:4px;}
+  .lstep{display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--faint); transition:color .4s;}
+  .lstep.on{color:var(--ink);}
+  .lstep .tick{width:17px; height:17px; border-radius:50%; border:1.5px solid var(--line); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:10px; transition:all .4s;}
+  .lstep.on .tick{background:var(--grape); border-color:var(--grape); color:#fff;}
+
+  /* ============ RESULT ============ */
+  .r-hero{padding:32px 24px 26px; text-align:center; position:relative;
+    background:radial-gradient(120% 90% at 50% 0%, #F6E0F0 0%, transparent 70%); border-bottom:1px solid var(--line);}
+  .r-hero .glow{width:78px; height:78px; margin:0 auto 16px;}
+  .r-kicker{font-size:11px; letter-spacing:2px; color:var(--grape-deep); text-transform:uppercase; margin-bottom:4px;}
+  .r-type{font-family:'Gowun Batang',serif; font-size:27px; font-weight:700; line-height:1.3; letter-spacing:-.5px;
+    background:linear-gradient(120deg,#C77BC4,#9168D6); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+  .r-type small{display:block; font-size:12px; color:var(--muted); font-weight:400; margin-top:7px; letter-spacing:1.5px;
+    font-family:'Pretendard',sans-serif; -webkit-text-fill-color:var(--muted);}
+  .r-tags{display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:14px;}
+  .r-tag{font-size:11px; background:rgba(255,255,255,.8); border:1px solid var(--line); color:var(--ink); padding:6px 13px; border-radius:50px;}
+  .r-rare{display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--grape-deep);
+    background:rgba(255,255,255,.7); border:1px solid #EBD6EF; padding:6px 14px; border-radius:50px; margin-top:14px;}
+
+  .r-body{padding:24px 18px 8px;}
+  .sec{margin-bottom:28px;}
+  .sec-label{display:flex; align-items:center; gap:9px; margin-bottom:15px;}
+  .sec-label .no{font-size:12px; color:#fff; background:var(--grad); width:24px; height:24px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-weight:700; box-shadow:0 5px 12px -4px rgba(176,110,210,.6);}
+  .sec-label .tt{font-family:'Gowun Batang',serif; font-size:16px; font-weight:700; color:var(--ink-strong);}
+  .sec-label .en{font-size:10px; letter-spacing:2px; color:var(--faint); text-transform:uppercase; margin-left:auto;}
+
+  .narr{font-size:14px; color:var(--ink); line-height:1.95; letter-spacing:-.1px;}
+  .narr p{margin-bottom:13px;}
+  .narr .pull{font-family:'Gowun Batang',serif; font-size:16px; color:var(--grape-deep); line-height:1.7;
+    border-left:3px solid var(--pink); padding:4px 0 4px 14px; margin:16px 0;}
+  .narr b{color:var(--grape-deep); font-weight:600;}
+
+  .score{margin-bottom:18px;}
+  .score-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px;}
+  .score-nm{font-size:13.5px; font-weight:600; color:var(--ink-strong);}
+  .score-nm .lab{display:block; font-size:11px; color:var(--muted); font-weight:400; margin-top:1px;}
+  .score-vv{font-family:'Gowun Batang',serif; font-size:17px; color:var(--grape-deep);}
+  .score-rail{height:9px; background:#F0E5F2; border-radius:6px; overflow:hidden;}
+  .score-rail>i{display:block; height:100%; width:0; border-radius:6px; transition:width 1.1s cubic-bezier(.2,.7,.3,1);}
+  .score-meta{font-size:11px; color:var(--faint); margin-top:6px; line-height:1.6;}
+
+  .adjust-card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px 16px 6px;}
+  .adjust-intro{font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:16px;}
+  .adjust-intro b{color:var(--ink);}
+  .slot{margin-bottom:18px;}
+  .slot-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .slot-nm{font-size:13px; font-weight:600; color:var(--ink-strong);}
+  .slot-nm .d{display:block; font-size:10.5px; color:var(--faint); font-weight:400; margin-top:1px;}
+  .slot-val{font-family:'Gowun Batang',serif; font-size:16px; color:var(--grape-deep); min-width:34px; text-align:right;}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:4px;
+    background:linear-gradient(90deg,var(--grape) 0%,var(--grape) 50%,#EBDEF0 50%); outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:22px; height:22px; border-radius:50%;
+    background:#fff; border:2px solid var(--grape); box-shadow:0 2px 8px rgba(176,110,210,.45); cursor:pointer; transition:transform .12s;}
+  input[type=range]::-webkit-slider-thumb:active{transform:scale(1.15);}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--grape);cursor:pointer;}
+  .recalc{width:100%; padding:12px; border-radius:14px; background:var(--grad-btn); color:#fff;
+    font-size:13px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; justify-content:center; gap:7px;
+    box-shadow:0 10px 22px -10px rgba(176,110,210,.6);}
+
+  .sit{display:flex; gap:13px; padding:15px; background:var(--paper); border:1px solid var(--line); border-radius:16px; margin-bottom:11px;}
+  .sit .ic{width:42px; height:42px; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:20px;}
+  .sit .h{font-size:13.5px; font-weight:600; color:var(--ink-strong); margin-bottom:5px;}
+  .sit .b{font-size:12.5px; color:var(--ink); opacity:.85; line-height:1.75;}
+
+  .grow{display:flex; gap:12px; padding:14px 0; border-bottom:1px dashed var(--line);}
+  .grow:last-child{border-bottom:none;}
+  .grow .n{font-family:'Gowun Batang',serif; font-size:15px; color:var(--grape); flex-shrink:0; width:22px; line-height:1.4;}
+  .grow .gh{font-size:13.5px; font-weight:600; color:var(--ink-strong); margin-bottom:4px;}
+  .grow .gb{font-size:12.5px; color:var(--ink); opacity:.85; line-height:1.75;}
+  .grow .try{font-size:11.5px; color:var(--grape-deep); margin-top:6px; display:inline-flex; align-items:center; gap:5px; font-weight:600;}
+
+  .r-foot{padding:6px 18px 24px;}
+  .divider{display:flex; align-items:center; gap:12px; margin:8px 0 20px; color:var(--faint); font-size:11px; letter-spacing:1px;}
+  .divider:before,.divider:after{content:''; flex:1; height:1px; background:var(--line);}
+
+  /* ============ SESSION INTRO ============ */
+  .ses-hero{padding:30px 24px 26px; text-align:center; position:relative;
+    background:linear-gradient(180deg,#F0DBEF 0%,#E6D7F4 100%); border-bottom:1px solid var(--line2);}
+  .ses-hero .glow{width:64px; height:64px; margin:0 auto 16px;}
+  .ses-hero h2{font-family:'Gowun Batang',serif; font-size:23px; font-weight:700; color:var(--grape-deep);}
+  .ses-hero .meta{font-size:12.5px; color:var(--muted); margin-top:8px; letter-spacing:.5px;}
+  .ses-body{padding:22px 20px 8px;}
+  .step{display:flex; gap:14px; align-items:flex-start; padding:14px 0; border-bottom:1px solid var(--line2);}
+  .step:last-of-type{border-bottom:none;}
+  .step .num{width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:#fff;}
+  .step .sh{font-size:14px; font-weight:600; color:var(--ink-strong);}
+  .step .se{font-size:11px; color:var(--faint); letter-spacing:.5px; margin-top:2px;}
+  .ses-note{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:8px;}
+  .ses-note .nh{font-size:13px; font-weight:700; color:var(--grape-deep); display:flex; align-items:center; gap:7px; margin-bottom:7px;}
+  .ses-note .nb{font-size:12.5px; color:var(--ink); opacity:.85; line-height:1.8;}
+  .ses-foot{padding:18px 20px 24px;}
+  .ses-disc{font-size:11px; color:var(--faint); text-align:center; margin-top:14px; line-height:1.6;}
+
+  /* expanded session content */
+  .ses-lede{font-size:13.5px; color:var(--ink); line-height:1.95; padding:20px 20px 4px;}
+  .ses-lede b{color:var(--grape-deep); font-weight:600;}
+  .ses-sechead{display:flex; align-items:center; gap:9px; padding:8px 20px 0; margin-top:18px;}
+  .ses-sechead .sno{font-size:11px; color:#fff; background:var(--grad); width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-weight:700;}
+  .ses-sechead .stt{font-family:'Gowun Batang',serif; font-size:15px; font-weight:700; color:var(--ink-strong);}
+  .step .sd{font-size:11.5px; color:var(--ink); opacity:.78; margin-top:4px; line-height:1.7;}
+  /* solution cards: book / discussion / talk */
+  .solwrap{padding:14px 20px 4px; display:flex; flex-direction:column; gap:11px;}
+  .sol{display:flex; gap:13px; padding:15px; border-radius:16px; border:1px solid var(--line); background:var(--paper);}
+  .sol .si{width:46px; height:46px; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:22px;}
+  .sol .sht{font-size:14px; font-weight:700; color:var(--ink-strong); display:flex; align-items:center; gap:7px;}
+  .sol .sht .pill{font-size:9.5px; font-weight:600; color:var(--grape-deep); background:#F3E6F4; border:1px solid #EBD6EF; padding:2px 8px; border-radius:50px;}
+  .sol .sbd{font-size:12px; color:var(--ink); opacity:.85; line-height:1.75; margin-top:5px;}
+  .sol .sbd em{font-style:normal; color:var(--grape-deep); font-weight:600;}
+  /* info chips */
+  .ses-info{padding:14px 20px 0; display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+  .ses-info .ich{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:12px 14px;}
+  .ses-info .ich .il{font-size:10.5px; color:var(--muted); margin-bottom:4px;}
+  .ses-info .ich .iv{font-size:13px; font-weight:700; color:var(--ink-strong);}
+  .ses-info .ich .iv small{font-size:11px; font-weight:400; color:var(--muted);}
+  /* testimonial */
+  .ses-quote{margin:16px 20px 0; padding:16px 18px; border-radius:16px; background:linear-gradient(160deg,#F6E7F2,#EEE0F6);
+    border:1px solid var(--line);}
+  .ses-quote .qt{font-family:'Gowun Batang',serif; font-size:13.5px; color:var(--ink-strong); line-height:1.8;}
+  .ses-quote .qw{font-size:11px; color:var(--muted); margin-top:9px;}
+
+  /* ============ APPLY FORM ============ */
+  .apply-hero{padding:26px 24px 20px; text-align:center; position:relative;
+    background:radial-gradient(120% 90% at 50% 0%, #F4DCEE 0%, transparent 72%);}
+  .apply-hero .glow{width:54px; height:54px; margin:0 auto 14px;}
+  .apply-hero h2{font-family:'Gowun Batang',serif; font-size:21px; font-weight:700; color:var(--grape-deep);}
+  .apply-hero p{font-size:12.5px; color:var(--muted); margin-top:6px;}
+  .form{padding:6px 20px 8px;}
+  .field{margin-bottom:20px;}
+  .field>label{display:block; font-size:13px; font-weight:600; color:var(--ink-strong); margin-bottom:9px;}
+  .field>label .ic{margin-right:5px;}
+  .field>label .multi{font-size:11px; color:var(--faint); font-weight:400; margin-left:5px;}
+  .inp{width:100%; padding:14px 16px; border-radius:14px; border:1.5px solid var(--line); background:var(--paper);
+    font-size:14px; color:var(--ink-strong); outline:none; transition:border .2s, box-shadow .2s;}
+  .inp::placeholder{color:var(--faint);}
+  .inp:focus{border-color:var(--grape); box-shadow:0 0 0 4px rgba(176,110,210,.12);}
+  .cal{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .cal .dow{font-size:10.5px; color:var(--faint); text-align:center; padding-bottom:2px;}
+  .cal .day{aspect-ratio:1/1; border-radius:12px; border:1.5px solid var(--line); background:var(--paper);
+    display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--ink); transition:all .14s;}
+  .cal .day.empty{border:none; background:transparent; pointer-events:none;}
+  .cal .day:hover:not(.empty){border-color:var(--grape);}
+  .cal .day.on{background:var(--grad); color:#fff; border-color:transparent; font-weight:700; box-shadow:0 6px 14px -6px rgba(176,110,210,.6);}
+  .cal .day.dow-sun{color:var(--pink-deep);}
+  .slots{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .tslot{padding:12px 6px; border-radius:13px; border:1.5px solid var(--line); background:var(--paper);
+    font-size:12.5px; color:var(--ink); text-align:center; transition:all .14s;}
+  .tslot:hover{border-color:var(--grape);}
+  .tslot.on{background:var(--grad); color:#fff; border-color:transparent; font-weight:600; box-shadow:0 6px 14px -6px rgba(176,110,210,.6);}
+  .check{display:flex; gap:10px; align-items:flex-start; margin-bottom:12px; cursor:pointer;}
+  .check .box{width:20px; height:20px; border-radius:6px; border:1.5px solid var(--faint); flex-shrink:0; margin-top:1px;
+    display:flex; align-items:center; justify-content:center; transition:all .15s; color:transparent; font-size:12px;}
+  .check.on .box{background:var(--grad); border-color:transparent; color:#fff;}
+  .check .ct{font-size:12px; color:var(--ink); line-height:1.6;}
+  .check .req{color:var(--pink-deep); font-weight:600;}
+  .form-foot{padding:8px 20px 26px;}
+
+  /* apply success */
+  .done{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:40px 30px; text-align:center;}
+  .done .glow{width:84px; height:84px;}
+  .done h2{font-family:'Gowun Batang',serif; font-size:23px; color:var(--grape-deep);}
+  .done p{font-size:13.5px; color:var(--ink); opacity:.85; line-height:1.85;}
+  .done .recap{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px 18px; width:100%; text-align:left; margin-top:4px;}
+  .done .recap .rr{display:flex; justify-content:space-between; font-size:12.5px; padding:6px 0;}
+  .done .recap .rr .k{color:var(--muted);} .done .recap .rr .v{color:var(--ink-strong); font-weight:600; text-align:right; max-width:60%;}
+
+  /* ============ ADMIN ============ */
+  .admin{display:none; flex-direction:column; flex:1; min-height:0;}
+  .admin.active{display:flex; overflow-y:auto;}
+  .adm-banner{font-size:11.5px; color:#9A7B3A; background:#FBF1D6; border:1px solid #F0E0B0;
+    padding:10px 14px; border-radius:12px; margin:14px 14px 0; display:flex; align-items:center; gap:7px; line-height:1.5;}
+  .adm-head{display:flex; align-items:center; gap:11px; padding:16px 16px 12px;}
+  .adm-head .ava{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 38% 33%,#fff,#EEC6E8 45%,#C49BE0);}
+  .adm-head .ah{font-family:'Gowun Batang',serif; font-size:16px; font-weight:700; color:var(--ink-strong);}
+  .adm-head .as{font-size:11px; color:var(--faint); margin-top:1px;}
+  .adm-head .tools{margin-left:auto; display:flex; gap:7px;}
+  .adm-head .tbtn{font-size:11.5px; padding:7px 12px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--muted); font-weight:600;}
+  .adm-head .tbtn.pri{background:var(--grad-btn); color:#fff; border-color:transparent; box-shadow:0 6px 14px -6px rgba(176,110,210,.5);}
+  .adm-body{padding:4px 14px 24px;}
+  .kpis{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:14px;}
+  .kpi{background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px 16px;}
+  .kpi .kl{font-size:11px; color:var(--muted); margin-bottom:5px;}
+  .kpi .kv{font-family:'Gowun Batang',serif; font-size:25px; color:var(--ink-strong); font-weight:700;}
+  .kpi .kv small{font-size:13px; color:var(--muted); font-weight:400; margin-left:2px; font-family:'Pretendard',sans-serif;}
+  .kpi.accent .kv{color:var(--grape-deep);}
+  .empty-msg{font-size:12px; color:var(--faint); text-align:center; padding:24px 10px; line-height:1.7;}
+  .empty-row{font-size:12.5px; color:var(--faint); text-align:center; padding:30px 16px; line-height:1.8;}
+  .panel{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px;}
+  .panel .ph{font-size:13px; font-weight:700; color:var(--ink-strong); margin-bottom:14px;}
+  .bars{display:flex; align-items:flex-end; gap:10px; height:120px; padding-top:6px;}
+  .bars .bcol{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;}
+  .bars .bar{width:60%; max-width:30px; border-radius:7px 7px 3px 3px; background:linear-gradient(180deg,#EDA6CC,#E58BBE);}
+  .bars .blab{font-size:10.5px; color:var(--muted);}
+  .hbars{display:flex; flex-direction:column; gap:10px;}
+  .hbar{display:flex; align-items:center; gap:10px; font-size:11.5px;}
+  .hbar .hl{width:48px; color:var(--muted); flex-shrink:0; text-align:right;}
+  .hbar .htrack{flex:1; height:14px; background:#F2E7F3; border-radius:8px; overflow:hidden;}
+  .hbar .hfill{height:100%; border-radius:8px; background:linear-gradient(90deg,#E59CC4,#B27CD6);}
+  .hbar .hv{width:24px; color:var(--ink-strong); font-weight:600; flex-shrink:0;}
+
+  .filters{display:flex; gap:7px; margin-bottom:12px;}
+  .fbtn{font-size:12px; padding:7px 15px; border-radius:50px; border:1px solid var(--line); background:#fff; color:var(--muted); font-weight:600;}
+  .fbtn.on{background:var(--grad-soft); color:var(--grape-deep); border-color:transparent;}
+  .tbl{background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden;}
+  .trow{display:grid; grid-template-columns:1.5fr 1.3fr 1.1fr 0.5fr 0.7fr; gap:6px; align-items:center;
+    padding:13px 14px; border-bottom:1px solid var(--line2); font-size:12px;}
+  .trow:last-child{border-bottom:none;}
+  .trow.thd{background:#FBF5FB; font-size:10.5px; color:var(--faint); letter-spacing:.3px;}
+  .trow .who{display:flex; align-items:center; gap:8px;}
+  .trow .who .av{width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:10px; color:#fff; font-weight:700; flex-shrink:0;}
+  .trow .who .nm{font-weight:600; color:var(--ink-strong); font-size:12.5px;}
+  .trow .tel{color:var(--grape-deep); font-size:11px;}
+  .trow .pref{color:var(--ink); font-size:11px;}
+  .trow .agree{text-align:center; color:var(--mint); font-weight:700;}
+  .trow .agree.no{color:var(--faint);}
+  .tag{font-size:10.5px; padding:4px 10px; border-radius:50px; font-weight:600; text-align:center; justify-self:end;}
+  .tag.win{background:#E4F3EC; color:#4FA587;}
+  .tag.wait{background:#F5ECD9; color:#C19A4A;}
+
+  /* ============ ADMIN LOGIN ============ */
+  .login{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; padding:40px 30px; text-align:center;}
+  .login .lock{width:66px; height:66px; border-radius:20px; display:flex; align-items:center; justify-content:center; font-size:28px;
+    background:linear-gradient(135deg,#EFE0F0,#E0D2F2); border:1px solid var(--line); margin-bottom:20px;}
+  .login h2{font-family:'Gowun Batang',serif; font-size:22px; color:var(--grape-deep);}
+  .login .lsub{font-size:12.5px; color:var(--muted); margin-top:7px; margin-bottom:26px; line-height:1.6;}
+  .login .lfield{width:100%; text-align:left; margin-bottom:14px;}
+  .login .lfield label{display:block; font-size:12px; font-weight:600; color:var(--ink-strong); margin-bottom:7px;}
+  .pw-wrap{position:relative;}
+  .pw-wrap .inp{padding-right:48px;}
+  .pw-toggle{position:absolute; right:8px; top:50%; transform:translateY(-50%); width:34px; height:34px;
+    display:flex; align-items:center; justify-content:center; background:transparent; border:none; cursor:pointer;
+    color:var(--faint); border-radius:9px; transition:color .15s, background .15s;}
+  .pw-toggle:hover{color:var(--grape); background:rgba(176,110,210,.08);}
+  .pw-toggle svg{width:20px; height:20px;}
+  .login .lerr{font-size:12px; color:#D87BAE; margin:2px 0 14px; min-height:16px; font-weight:600;}
+  .login . pw{position:relative;}
+  .login .demo-cred{font-size:11px; color:var(--faint); margin-top:16px; line-height:1.6; background:var(--card);
+    border:1px solid var(--line); border-radius:12px; padding:10px 14px;}
+  .login .demo-cred b{color:var(--grape-deep);}
+  .adm-logout{font-size:11.5px; padding:7px 12px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--muted); font-weight:600;}
+
+  /* ============ SHARE ============ */
+  .share-wrap{flex:1; display:flex; flex-direction:column; padding:18px;}
+  .card-preview{border-radius:20px; overflow:hidden; border:1px solid var(--line); box-shadow:0 16px 34px -16px rgba(120,80,150,.4); margin-bottom:18px;}
+  .cp-top{background:linear-gradient(160deg,#F4DCEE,#DEC8F2); padding:28px 20px; text-align:center;}
+  .cp-top .glow{width:60px; height:60px; margin:0 auto 12px;}
+  .cp-top .ty{font-family:'Gowun Batang',serif; font-size:20px; font-weight:700; color:var(--grape-deep);}
+  .cp-top .sl{font-size:12px; color:var(--muted); margin-top:5px;}
+  .cp-meta{background:#fff; padding:13px 16px; font-size:11px; color:var(--faint); display:flex; justify-content:space-between;}
+  .sbtn{width:100%; padding:15px; border-radius:14px; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:9px; margin-bottom:10px;}
+  .sbtn svg{width:18px;height:18px;}
+  .share-q{text-align:center; font-size:12px; color:var(--faint); margin-top:6px;}
+
+  #toast{position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink-strong); color:#fff; padding:12px 22px; border-radius:50px; font-size:13px;
+    opacity:0; transition:all .3s; pointer-events:none; z-index:99; box-shadow:0 12px 30px -8px rgba(80,50,110,.5);}
+
+  .demo-nav{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top:18px; max-width:440px;}
+  .demo-nav button{font-size:11px; padding:7px 12px; border:1px solid #E2D2EA; background:rgba(255,255,255,.7);
+    border-radius:50px; color:var(--muted); transition:all .15s; font-weight:600;}
+  .demo-nav button:hover{border-color:var(--grape); color:var(--grape-deep);}
+  .demo-nav button.on{background:var(--grad-btn); color:#fff; border-color:transparent;}
+  .demo-hint{font-size:11px; color:#9a87aa; text-align:center; margin-top:9px; max-width:400px; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="device" id="device">
+
+  <!-- ============ ADMIN ============ -->
+  <!-- ============ ADMIN LOGIN ============ -->
+  <section class="screen active" data-screen="adminlogin">
+    <div class="login">
+      <div class="lock">🔒</div>
+      <h2 class="serif">운영자 로그인</h2>
+      <div class="lsub">관리자 전용 페이지예요.<br>아이디와 비밀번호로 로그인해 주세요.</div>
+      <div class="lfield">
+        <label>아이디</label>
+        <input class="inp" id="adm-id" placeholder="아이디" autocomplete="username" onkeydown="if(event.key==='Enter')adminLogin()">
+      </div>
+      <div class="lfield">
+        <label>비밀번호</label>
+        <div class="pw-wrap">
+          <input class="inp" id="adm-pw" type="password" placeholder="비밀번호" autocomplete="current-password" onkeydown="if(event.key==='Enter')adminLogin()">
+          <button type="button" class="pw-toggle" id="pwToggle" onclick="togglePw()" aria-label="비밀번호 보기">
+            <svg id="pwEye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="lerr" id="adm-err"></div>
+      <button class="cta" onclick="adminLogin()">로그인</button>
+    </div>
+  </section>
+
+  <!-- ============ ADMIN ============ -->
+  <section class="admin" data-screen="admin">
+    <div class="adm-banner">🔒 운영자 전용 화면 — 로그인한 관리자만 접근 가능해요. 일반 사용자에게는 노출되지 않습니다.</div>
+    <div class="adm-head">
+      <span class="ava"></span>
+      <div>
+        <div class="ah serif">무의식 결 분석 · 6월 회차</div>
+        <div class="as">신청 마감까지 D-2 · 마지막 동기화 방금 전</div>
+      </div>
+      <div class="tools">
+        <button class="tbtn" onclick="refreshAdmin()">새로고침</button>
+        <button class="tbtn" onclick="exportCsv()">CSV</button>
+        <button class="tbtn pri" onclick="runDraw()">추첨 실행</button>
+        <button class="adm-logout" onclick="adminLogout()">로그아웃</button>
+      </div>
+    </div>
+    <div class="adm-body">
+      <div class="kpis">
+        <div class="kpi"><div class="kl">총 신청자</div><div class="kv"><span id="kpiTotal">0</span><small>명</small></div></div>
+        <div class="kpi accent"><div class="kl">당첨 정원</div><div class="kv"><span id="kpiWin">0</span><small>명</small></div></div>
+        <div class="kpi"><div class="kl">경쟁률</div><div class="kv"><span id="kpiRate">–</span><small>:1</small></div></div>
+        <div class="kpi"><div class="kl">일정 미선택</div><div class="kv"><span id="kpiNo">0</span><small>명</small></div></div>
+      </div>
+      <div class="panel">
+        <div class="ph">선호 날짜</div>
+        <div class="bars" id="admBars"></div>
+      </div>
+      <div class="panel">
+        <div class="ph">선호 시간대</div>
+        <div class="hbars" id="admHbars"></div>
+      </div>
+      <div class="filters">
+        <button class="fbtn on" onclick="filterAdm('all',this)">전체</button>
+        <button class="fbtn" onclick="filterAdm('win',this)">당첨</button>
+        <button class="fbtn" onclick="filterAdm('wait',this)">대기</button>
+      </div>
+      <div class="tbl" id="admTbl"></div>
+    </div>
+  </section>
+
+</div>
+
+
+
+<div id="toast"></div>
+
+<!-- ===== Firebase (Firestore) 실시간 구독 ===== -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc }
+    from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCfc-CQF1vg6kNJZtLx1j_pDVzipB63Mlc",
+    authDomain: "gyeol2.firebaseapp.com",
+    projectId: "gyeol2",
+    storageBucket: "gyeol2.firebasestorage.app",
+    messagingSenderId: "417042010261",
+    appId: "1:417042010261:web:2642113d3cc78613ce4b9c",
+    measurementId: "G-9HTL73P3K7"
+  };
+
+  try{
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.fbReady = true;
+
+    // 신청자 컬렉션을 최신순으로 실시간 구독
+    let started=false;
+    window.fbSubscribeApplicants = function(){
+      if(started) return; started=true;
+      const q = query(collection(db,'applicants'), orderBy('createdAt','desc'));
+      onSnapshot(q, (snap)=>{
+        const list=[];
+        snap.forEach(d=>{ const v=d.data(); list.push({
+          id:d.id, name:v.name||'', tel:v.tel||'', pref:v.pref||'-', times:v.times||'-',
+          agree:v.agree?1:0, status:v.status||'wait'
+        }); });
+        window.fbApplicants = list;
+        // 운영자 화면이 떠 있으면 다시 그림
+        if(typeof window.onApplicantsUpdate==='function') window.onApplicantsUpdate(list);
+      }, (err)=>{ console.warn('Firestore 구독 실패 — localStorage로 대체', err); window.fbReady=false; if(typeof window.onApplicantsUpdate==='function') window.onApplicantsUpdate(null); });
+    };
+
+    // 추첨 결과 등 상태 변경을 Firestore에 반영
+    window.fbUpdateStatus = async function(id, status){
+      try{ await updateDoc(doc(db,'applicants',id), {status}); }catch(e){ console.warn('상태 업데이트 실패', e); }
+    };
+  }catch(e){
+    console.warn('Firebase 초기화 실패 — localStorage로 대체합니다.', e);
+    window.fbReady = false;
+  }
+</script>
+
+<script>
+/* ---------- sparkles ---------- */
+(function(){
+  const sky=document.getElementById('sky1'); if(!sky) return;
+  const marks=['✦','✧','˖','✦','·'];
+  for(let i=0;i<14;i++){
+    const s=document.createElement('span'); s.className='sp';
+    s.textContent=marks[i%marks.length];
+    s.style.left=(Math.random()*92+3)+'%';
+    s.style.top=(Math.random()*88+3)+'%';
+    s.style.fontSize=(8+Math.random()*10)+'px';
+    s.style.animationDelay=(Math.random()*4)+'s';
+    sky.appendChild(s);
+  }
+})();
+
+/* ---------- navigation ---------- */
+const device=document.getElementById('device');
+const navMap={adminlogin:0,admin:0};
+function go(name, btn){
+  // guard: admin dashboard requires login
+  if(name==='admin' && !isAdminAuthed){ name='adminlogin'; }
+  document.querySelectorAll('.screen,.admin').forEach(s=>s.classList.toggle('active', s.dataset.screen===name));
+  if(name==='admin') renderAdmin();
+  const active=document.querySelector('.screen.active,.admin.active');
+  if(active) active.scrollTop=0;
+  device.scrollTop=0; window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ---------- admin auth (separate login) ---------- */
+const ADMIN_ID='admin';
+const ADMIN_PW='베드로';
+let isAdminAuthed=false;
+function goAdmin(){ go(isAdminAuthed ? 'admin' : 'adminlogin'); }
+const EYE_OPEN='<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>';
+const EYE_OFF='<path d="M2 12s3.5-7 10-7c2 0 3.8.6 5.3 1.5M22 12s-3.5 7-10 7c-2 0-3.8-.6-5.3-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><line x1="3" y1="3" x2="21" y2="21"/>';
+function togglePw(){
+  const inp=document.getElementById('adm-pw');
+  const eye=document.getElementById('pwEye');
+  const btn=document.getElementById('pwToggle');
+  if(inp.type==='password'){ inp.type='text'; eye.innerHTML=EYE_OFF; btn.setAttribute('aria-label','비밀번호 숨기기'); }
+  else{ inp.type='password'; eye.innerHTML=EYE_OPEN; btn.setAttribute('aria-label','비밀번호 보기'); }
+}
+function adminLogin(){
+  const id=(document.getElementById('adm-id').value||'').trim();
+  const pw=(document.getElementById('adm-pw').value||'').trim().normalize('NFC');
+  const err=document.getElementById('adm-err');
+  if(!id || !pw){ err.textContent='아이디와 비밀번호를 입력해 주세요.'; return; }
+  if(id===ADMIN_ID && pw===ADMIN_PW.normalize('NFC')){
+    isAdminAuthed=true; err.textContent='';
+    document.getElementById('adm-pw').value='';
+    if(window.fbReady && window.fbSubscribeApplicants) window.fbSubscribeApplicants();
+    go('admin');
+  }else{
+    err.textContent='아이디 또는 비밀번호가 올바르지 않아요.';
+    document.getElementById('adm-pw').value='';
+  }
+}
+function adminLogout(){
+  isAdminAuthed=false;
+  document.getElementById('adm-id').value='';
+  document.getElementById('adm-pw').value='';
+  document.getElementById('adm-err').textContent='';
+  toast('로그아웃됐어요');
+  go('adminlogin');
+}
+/* ---------- admin ---------- */
+/* 신청자 목록은 초기화된 상태에서 시작합니다.
+   사용자 사이트(maeumgyeol_user.html)에서 '신청 완료'한 사람이
+   같은 브라우저의 localStorage 를 통해 아래로 들어와 표시됩니다.
+   (실제 운영에서는 이 부분을 서버 API 조회로 교체) */
+const APPLY_STORE_KEY='maeumgyeol_applicants_v1';
+const AV_COLORS=['#E59CC4','#B27CD6','#A8D8C8','#C9A8E8','#F5C97E','#7B92A8','#D87BAE'];
+let applicants=[];            // 화면에 그릴 통합 목록(마스킹)
+let rawApplicants=[];         // CSV용 원본(연락처 포함)
+let admFilter='all';
+let usingFirebase=false;
+
+function rawList(){
+  // 우선순위: Firebase 실시간 데이터 → localStorage
+  if(window.fbReady && Array.isArray(window.fbApplicants)){
+    usingFirebase=true;
+    return window.fbApplicants;
+  }
+  usingFirebase=false;
+  let stored=[];
+  try{ const raw=localStorage.getItem(APPLY_STORE_KEY); if(raw) stored=JSON.parse(raw)||[]; }catch(e){ stored=[]; }
+  return stored;
+}
+
+function loadApplicants(){
+  const stored=rawList();
+  rawApplicants=stored;
+  applicants = stored.map((r,i)=>({
+    id: r.id||null,
+    nm: r.name||'(이름없음)',
+    ini: (r.name||'?').slice(0,1),
+    tel: maskTel(r.tel||''),
+    pref: r.pref||'-',
+    times: r.times||'-',
+    ag: r.agree?1:0,
+    st: r.status||'wait',
+    c: AV_COLORS[i % AV_COLORS.length]
+  }));
+}
+function maskTel(t){
+  // 010-1234-5678 -> 010-1234-**** (뒤 4자리 마스킹)
+  const d=(t||'').replace(/[^0-9]/g,'');
+  if(d.length>=10){
+    const a=d.slice(0,3), b=d.slice(3, d.length-4);
+    return `${a}-${b}-****`;
+  }
+  return t||'-';
+}
+
+function computeStats(){
+  const total=applicants.length;
+  const win=applicants.filter(a=>a.st==='win').length;
+  const noSched=applicants.filter(a=>!a.pref || a.pref==='-').length;
+  // 선호 날짜 집계
+  const dayMap={};
+  applicants.forEach(a=>{ (a.pref||'').split(',').map(s=>s.trim()).filter(s=>s&&s!=='-').forEach(d=>{dayMap[d]=(dayMap[d]||0)+1;}); });
+  const dayPref=Object.keys(dayMap).sort((x,y)=>{
+    const nx=parseInt((x.split('/')[1]||0),10), ny=parseInt((y.split('/')[1]||0),10); return nx-ny;
+  }).map(d=>({d, v:dayMap[d]}));
+  // 선호 시간대 집계
+  const timeMap={};
+  applicants.forEach(a=>{ (a.times||'').split(',').map(s=>s.trim()).filter(s=>s&&s!=='-').forEach(t=>{timeMap[t]=(timeMap[t]||0)+1;}); });
+  const timePref=Object.keys(timeMap).map(t=>({t, v:timeMap[t]})).sort((a,b)=>b.v-a.v);
+  return {total, win, noSched, dayPref, timePref};
+}
+
+function renderAdmin(){
+  loadApplicants();
+  const st=computeStats();
+  // KPI
+  document.getElementById('kpiTotal').textContent=st.total;
+  document.getElementById('kpiWin').textContent=st.win;
+  const rate = st.win>0 ? (st.total/st.win).toFixed(1) : '–';
+  document.getElementById('kpiRate').textContent=rate;
+  document.getElementById('kpiNo').textContent=st.noSched;
+
+  // 선호 날짜 차트
+  const barsEl=document.getElementById('admBars');
+  if(st.dayPref.length){
+    const maxD=Math.max(...st.dayPref.map(x=>x.v));
+    barsEl.innerHTML=st.dayPref.map(x=>`
+      <div class="bcol"><div class="bar" style="height:${Math.max(8,Math.round(x.v/maxD*94))}%"></div><div class="blab">${x.d}</div></div>`).join('');
+  }else{
+    barsEl.innerHTML=`<div class="empty-msg">아직 선호 날짜 데이터가 없어요</div>`;
+  }
+  // 선호 시간대 차트
+  const hEl=document.getElementById('admHbars');
+  if(st.timePref.length){
+    const maxT=Math.max(...st.timePref.map(x=>x.v));
+    hEl.innerHTML=st.timePref.map(x=>`
+      <div class="hbar"><span class="hl">${x.t}</span><div class="htrack"><div class="hfill" style="width:${Math.max(6,Math.round(x.v/maxT*100))}%"></div></div><span class="hv">${x.v}</span></div>`).join('');
+  }else{
+    hEl.innerHTML=`<div class="empty-msg">아직 선호 시간대 데이터가 없어요</div>`;
+  }
+  drawTable();
+}
+function drawTable(){
+  let rows=`<div class="trow thd"><span>신청자</span><span>연락처</span><span>선호 일정</span><span style="text-align:center">동의</span><span style="text-align:right">상태</span></div>`;
+  const list=applicants.filter(a=>admFilter==='all'||a.st===admFilter);
+  if(list.length===0){
+    rows+=`<div class="empty-row">아직 신청자가 없어요.<br>사용자 사이트에서 ‘신청 완료하기’를 하면 여기에 표시돼요.</div>`;
+  }else{
+    list.forEach(a=>{
+      rows+=`<div class="trow">
+        <span class="who"><span class="av" style="background:${a.c}">${a.ini.slice(0,1)}</span><span class="nm">${a.nm}</span></span>
+        <span class="tel">${a.tel}</span>
+        <span class="pref">${a.pref}</span>
+        <span class="agree${a.ag?'':' no'}">${a.ag?'✓':'—'}</span>
+        <span class="tag ${a.st}">${a.st==='win'?'당첨':'대기'}</span>
+      </div>`;
+    });
+  }
+  document.getElementById('admTbl').innerHTML=rows;
+}
+function filterAdm(f,btn){admFilter=f;document.querySelectorAll('.filters .fbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');drawTable();}
+function refreshAdmin(){ renderAdmin(); toast('✦ 신청 현황을 새로고침했어요'); }
+
+/* CSV 내보내기 (마스킹 해제된 원본 연락처 포함) */
+function exportCsv(){
+  const stored=rawList();
+  if(!stored || stored.length===0){ toast('내보낼 신청자가 없어요'); return; }
+  const head=['이름','연락처','선호 날짜','선호 시간','동의','상태','신청시각'];
+  const rows=stored.map(r=>[
+    r.name||'', r.tel||'', r.pref||'', r.times||'',
+    r.agree?'동의':'미동의', (r.status==='win'?'당첨':'대기'), (r.at||'')
+  ]);
+  const csv=[head].concat(rows).map(line=>line.map(c=>{
+    const s=(''+c).replace(/"/g,'""'); return /[",\n]/.test(s)?`"${s}"`:s;
+  }).join(',')).join('\r\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}); // BOM: 엑셀 한글 깨짐 방지
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='마음결_신청자.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('✦ CSV를 내보냈어요');
+}
+
+/* 추첨 실행: 동의한 대기자 중 정원만큼 무작위 당첨 처리 후 저장 */
+const DRAW_QUOTA=30;
+function runDraw(){
+  const stored=rawList();
+  if(!stored || stored.length===0){ toast('추첨할 신청자가 없어요'); return; }
+  const eligible=stored.filter(r=>r.agree && r.pref && r.pref!=='-');
+  for(let i=eligible.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [eligible[i],eligible[j]]=[eligible[j],eligible[i]]; }
+  const winners=new Set(eligible.slice(0,DRAW_QUOTA));
+
+  if(usingFirebase && window.fbUpdateStatus){
+    // Firestore 문서별 상태 업데이트 (구독이 자동으로 화면을 갱신)
+    stored.forEach(r=>{ if(r.id) window.fbUpdateStatus(r.id, winners.has(r)?'win':'wait'); });
+    toast(`✨ 추첨 완료 — ${Math.min(DRAW_QUOTA,winners.size)}명 당첨`);
+  }else{
+    stored.forEach(r=>{ r.status = winners.has(r) ? 'win' : 'wait'; });
+    try{ localStorage.setItem(APPLY_STORE_KEY, JSON.stringify(stored)); }catch(e){}
+    renderAdmin();
+    toast(`✨ 추첨 완료 — ${Math.min(DRAW_QUOTA,winners.size)}명 당첨`);
+  }
+}
+
+/* Firebase 실시간 업데이트 콜백 — 데이터가 바뀌면 화면 자동 갱신 */
+window.onApplicantsUpdate=function(list){
+  // 운영자 대시보드가 떠 있을 때만 다시 그림
+  const onAdmin=document.querySelector('.admin.active');
+  if(onAdmin) renderAdmin();
+};
+
+/* ---------- toast ---------- */
+let tt;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';clearTimeout(tt);tt=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},2400);}
+
+/* ---------- admin entry via URL hash (#admin) ---------- */
+function bootAdmin(){
+  // admin build always starts at the login gate
+  go(isAdminAuthed ? 'admin' : 'adminlogin');
+}
+bootAdmin();
+
+</script>
+
+</body>
+</html>
