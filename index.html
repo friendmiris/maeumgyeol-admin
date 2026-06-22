@@ -73,6 +73,28 @@
     .screen[data-screen="chat"].active{min-height:calc(100vh - 44px); overflow:hidden;}
   }
 
+  /* ===== 태블릿 (768px~): 로그인은 좁게, 대시보드는 넓게 ===== */
+  @media (min-width:768px){
+    body{padding:30px 18px 50px;}
+    .device{max-width:520px; height:min(880px, calc(100vh - 90px));}
+    /* 대시보드 화면일 때 더 넓게 */
+    .device[data-screen-active="admin"]{max-width:840px;}
+    .device[data-screen-active="admin"] .kpis{grid-template-columns:repeat(4,1fr);}
+    .device[data-screen-active="admin"] .adm-body .charts{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+    .device[data-screen-active="admin"] .adm-body .charts .panel{margin-bottom:0;}
+  }
+
+  /* ===== PC (1024px~): 대시보드 와이드 ===== */
+  @media (min-width:1024px){
+    body{padding:40px 24px 60px;}
+    .device{max-width:520px; height:min(900px, calc(100vh - 80px));}
+    .device[data-screen-active="admin"]{max-width:1080px;}
+  }
+  @media (min-width:1280px){
+    .device[data-screen-active="admin"]{max-width:1240px;}
+    .device[data-screen-active="admin"] .trow{font-size:13px;}
+  }
+
   button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
   input,textarea{font-family:inherit;}
 
@@ -346,12 +368,20 @@
   .adm-banner{font-size:11.5px; color:#9A7B3A; background:#FBF1D6; border:1px solid #F0E0B0;
     padding:10px 14px; border-radius:12px; margin:14px 14px 0; display:flex; align-items:center; gap:7px; line-height:1.5;}
   .adm-head{display:flex; align-items:center; gap:11px; padding:16px 16px 12px;}
-  .adm-head .ava{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 38% 33%,#fff,#EEC6E8 45%,#C49BE0);}
+  .adm-head .ava{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 38% 33%,#fff,#EEC6E8 45%,#C49BE0); flex-shrink:0;}
   .adm-head .ah{font-family:'Gowun Batang',serif; font-size:16px; font-weight:700; color:var(--ink-strong);}
   .adm-head .as{font-size:11px; color:var(--faint); margin-top:1px;}
-  .adm-head .tools{margin-left:auto; display:flex; gap:7px;}
-  .adm-head .tbtn{font-size:11.5px; padding:7px 12px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--muted); font-weight:600;}
+  .adm-head .tools{margin-left:auto; display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end;}
+  .adm-head .tbtn{font-size:11.5px; padding:7px 12px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--muted); font-weight:600; white-space:nowrap;}
   .adm-head .tbtn.pri{background:var(--grad-btn); color:#fff; border-color:transparent; box-shadow:0 6px 14px -6px rgba(176,110,210,.5);}
+  /* 모바일: 헤더 세로 배치 (제목이 한 글자씩 끊기지 않도록) */
+  @media (max-width:600px){
+    .adm-head{flex-wrap:wrap;}
+    .adm-head .head-title{flex:1 1 100%; display:flex; align-items:center; gap:11px; min-width:0;}
+    .adm-head .ah{font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .adm-head .tools{margin-left:0; flex:1 1 100%; justify-content:flex-start; margin-top:4px;}
+    .adm-logout{white-space:nowrap;}
+  }
   .adm-body{padding:4px 14px 24px;}
   .kpis{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:14px;}
   .kpi{background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px 16px;}
@@ -474,10 +504,12 @@
   <section class="admin" data-screen="admin">
     <div class="adm-banner">🔒 운영자 전용 화면 — 로그인한 관리자만 접근 가능해요. 일반 사용자에게는 노출되지 않습니다.</div>
     <div class="adm-head">
-      <span class="ava"></span>
-      <div>
-        <div class="ah serif">무의식 결 분석 · 6월 회차</div>
-        <div class="as">신청 마감까지 D-2 · 마지막 동기화 방금 전</div>
+      <div class="head-title">
+        <span class="ava"></span>
+        <div>
+          <div class="ah serif">무의식 결 분석 · 6월 회차</div>
+          <div class="as">신청 마감까지 D-2 · 마지막 동기화 방금 전</div>
+        </div>
       </div>
       <div class="tools">
         <button class="tbtn" onclick="refreshAdmin()">새로고침</button>
@@ -493,13 +525,15 @@
         <div class="kpi"><div class="kl">경쟁률</div><div class="kv"><span id="kpiRate">–</span><small>:1</small></div></div>
         <div class="kpi"><div class="kl">일정 미선택</div><div class="kv"><span id="kpiNo">0</span><small>명</small></div></div>
       </div>
-      <div class="panel">
-        <div class="ph">선호 날짜</div>
-        <div class="bars" id="admBars"></div>
-      </div>
-      <div class="panel">
-        <div class="ph">선호 시간대</div>
-        <div class="hbars" id="admHbars"></div>
+      <div class="charts">
+        <div class="panel">
+          <div class="ph">선호 날짜</div>
+          <div class="bars" id="admBars"></div>
+        </div>
+        <div class="panel">
+          <div class="ph">선호 시간대</div>
+          <div class="hbars" id="admHbars"></div>
+        </div>
       </div>
       <div class="filters">
         <button class="fbtn on" onclick="filterAdm('all',this)">전체</button>
@@ -582,11 +616,13 @@
 
 /* ---------- navigation ---------- */
 const device=document.getElementById('device');
+device.setAttribute('data-screen-active','adminlogin'); // 초기 화면
 const navMap={adminlogin:0,admin:0};
 function go(name, btn){
   // guard: admin dashboard requires login
   if(name==='admin' && !isAdminAuthed){ name='adminlogin'; }
   document.querySelectorAll('.screen,.admin').forEach(s=>s.classList.toggle('active', s.dataset.screen===name));
+  device.setAttribute('data-screen-active', name);   // 반응형 폭 제어용
   if(name==='admin') renderAdmin();
   const active=document.querySelector('.screen.active,.admin.active');
   if(active) active.scrollTop=0;
